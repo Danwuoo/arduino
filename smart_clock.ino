@@ -1,7 +1,7 @@
 #include <Servo.h>
 
 // =================================================================================
-// Pin Definitions (Based on system_wiring_status.md)
+// 腳位定義（依 system_wiring_status.md）
 // =================================================================================
 const int PIN_RTC_SDA = 20;
 const int PIN_RTC_SCL = 21;
@@ -16,56 +16,53 @@ const int PIN_STEP_IN3 = 32;
 const int PIN_STEP_IN4 = 33;
 
 // =================================================================================
-// Constants & Settings
+// 常數與設定
 // =================================================================================
 
-// --- Stepper Settings ---
-// Assumed 28BYJ-48 with 4096 steps per revolution (Half-step mode)
+// --- 步進馬達設定 ---
+// 假設使用 28BYJ-48，半步驟模式一圈 4096 步
 const int STEPS_PER_REV = 4096;
 
-// Target Durations per Revolution (ms)
+// 每圈目標時間（毫秒）
 const unsigned long DURATION_FAST = 6000;
 const unsigned long DURATION_NORMAL = 12000;
 const unsigned long DURATION_SLOW = 24000;
 
-// Calculated Delays (microseconds)
-// Delay = (Duration * 1000) / STEPS_PER_REV
-// Fast: 6000000 / 4096 ~= 1465 us
-// Normal: 12000000 / 4096 ~= 2930 us
-// Slow: 24000000 / 4096 ~= 5860 us
+// 依實測校正步進延遲：原本約 2ms/step 只達到約 8.3 秒／圈，
+// 需求為 6 秒／圈，因此調整為約 1.45ms/step (≈ 2ms × 0.7229)。
+// 延遲以微秒計算，並維持正常／慢速為快速的 2 倍與 4 倍。
+const unsigned long STEP_DELAY_FAST = 1450;  // 約 6 秒／圈
+const unsigned long STEP_DELAY_NORMAL = STEP_DELAY_FAST * 2; // 約 12 秒／圈
+const unsigned long STEP_DELAY_SLOW = STEP_DELAY_FAST * 4;   // 約 24 秒／圈
 
-const unsigned long STEP_DELAY_FAST = 1465;
-const unsigned long STEP_DELAY_NORMAL = 2930;
-const unsigned long STEP_DELAY_SLOW = 5860;
-
-// --- Servo Settings ---
-// Continuous rotation servo (or modified).
-// 0 = Full speed CW, 180 = Full speed CCW (or vice versa). 90 = Stop.
-// Requirement: "Stable counter-clockwise rotation (medium-low speed)"
-// Adjust SERVO_SPEED_CCW value to tune speed.
-// Assuming 90 is stop, values > 90 are CCW (or < 90 depending on servo).
-// Let's assume > 90 is CCW. "Medium-low" might be 95-100 or 85-80.
-// If it's a standard servo used as continuous, 0 might be max speed one way.
-// Let's set a placeholder we can tune.
+// --- 伺服馬達設定 ---
+// 連續旋轉伺服（或改裝後）。
+// 0 = 順時針全速，180 = 逆時針全速（或相反），90 = 停止。
+// 需求：穩定逆時針中低速轉動。
+// 可透過調整 SERVO_SPEED_CCW 微調速度。
+// 假設 90 為停止，> 90 代表逆時針（方向依伺服而定）。
+// 先以接近 90 的數值作為可調基準。
 const int SERVO_STOP = 90;
-const int SERVO_CCW_SPEED = 100; // Example value, close to 90 for slow speed
+const int SERVO_CCW_SPEED = 100; // 例示值，接近 90 可維持中低速
 
-// --- Sound Settings ---
-const int SOUND_THRESHOLD = 300; // Threshold for analog read (0-1023). Tune this!
-const unsigned long SOUND_ACTIVITY_WINDOW = 200; // ms. AC signal hold time.
-const unsigned long SOUND_VALIDATION_TIME = 2000; // ms. 2 seconds required for state change.
+// --- 聲音設定 ---
+// 聲音類比讀值門檻（0-1023），需依現場調整。
+// 聲音狀態需連續 2 秒才算成立。
+const int SOUND_THRESHOLD = 300; // 聲音門檻，可依現場微調
+const unsigned long SOUND_ACTIVITY_WINDOW = 200; // 毫秒，短期保持 AC 訊號
+const unsigned long SOUND_VALIDATION_TIME = 2000; // 毫秒，連續 2 秒才視為狀態轉換
 
 // =================================================================================
-// Global Objects
+// 全域物件
 // =================================================================================
 Servo servo1;
 Servo servo2;
 
 // =================================================================================
-// Logic Classes
+// 邏輯類別
 // =================================================================================
 
-// Class to handle Stepper Motor (Non-blocking)
+// 非阻塞步進馬達控制類別
 class StepperDriver {
   private:
     int pins[4];
@@ -73,9 +70,9 @@ class StepperDriver {
     unsigned long lastStepTime;
     unsigned long stepIntervalMicros;
     bool isMoving;
-    int remainingStepsLocked; // For the "Locked" 2-turn action
+    int remainingStepsLocked; // 用於「鎖定」的 2 圈動作
 
-    // 8-step sequence (Half-step)
+    // 8 步半步驟序列
     const int sequence[8][4] = {
       {1, 0, 0, 0}, // 8
       {1, 1, 0, 0}, // 1
@@ -87,9 +84,7 @@ class StepperDriver {
       {1, 0, 0, 1}  // 7
     };
 
-    // Note: To match specific direction, we might need to reverse sequence.
-    // Assuming standard sequence is CW? Or CCW?
-    // We can just reverse the index increment if needed.
+    // 如需特定方向，可將序列反轉；若方向相反，改為遞減索引即可。
 
   public:
     StepperDriver(int p1, int p2, int p3, int p4) {
@@ -115,12 +110,12 @@ class StepperDriver {
       isMoving = moving;
     }
 
-    // Start the locked 2-turn sequence
+    // 啟動鎖定的 2 圈序列
     void startLockedSequence() {
-      // Fast speed
+      // 使用快速速度
       setSpeedDelay(STEP_DELAY_FAST);
       setMoving(true);
-      // 2 Revolutions
+      // 2 圈
       remainingStepsLocked = STEPS_PER_REV * 2;
     }
 
@@ -144,13 +139,12 @@ class StepperDriver {
 
   private:
     void step() {
-      // Drive pins
+      // 驅動線圈腳位
       for (int i = 0; i < 4; i++) {
         digitalWrite(pins[i], sequence[stepIndex][i]);
       }
 
-      // Increment index (Direction)
-      // Assuming one direction for all operations based on specs "Pointer speed setting"
+      // 依指定方向遞增索引（需求固定同一方向）
       stepIndex++;
       if (stepIndex >= 8) {
         stepIndex = 0;
@@ -158,13 +152,13 @@ class StepperDriver {
     }
 };
 
-// Class to handle Sound Detection with Activity Window and Debounce
+// 聲音偵測與持續驗證類別
 class SoundManager {
   private:
-    bool stableState;         // The validated output state
-    bool lastSignalActive;    // The "activity" state (AC filtered)
-    unsigned long lastNoiseTime; // Last time threshold was crossed
-    unsigned long stateChangeTime; // Time when "activity" state last changed
+    bool stableState;         // 已驗證的穩定狀態
+    bool lastSignalActive;    // 活動狀態（含 AC 緩衝）
+    unsigned long lastNoiseTime; // 上次越過門檻的時間
+    unsigned long stateChangeTime; // 活動狀態最近一次變化時間
 
   public:
     SoundManager() {
@@ -177,34 +171,34 @@ class SoundManager {
     void update() {
       unsigned long now = millis();
 
-      // 1. Raw Detection (AC Signal)
+      // 1. 原始偵測（AC 訊號）
       int val = analogRead(PIN_SOUND);
-      int diff = abs(val - 512); // Assuming 2.5V bias (512)
+      int diff = abs(val - 512); // 假設 2.5V 偏壓（512）
 
-      // If noise detected, update last heard time
+      // 偵測到噪音即更新最後聽到時間
       if (diff > SOUND_THRESHOLD) {
         lastNoiseTime = now;
       }
 
-      // 2. Activity Signal (Short-term hold)
-      // "Is there sound right now (or very recently)?"
+      // 2. 活動訊號（短期保持）
+      // 判斷此刻或近期是否有聲音
       bool isSignalActive = (now - lastNoiseTime < SOUND_ACTIVITY_WINDOW);
 
-      // 3. Validation Logic (Long-term debounce)
-      // "Sound status must be maintained continuously for 2 seconds to be valid"
+      // 3. 驗證邏輯（長時間去抖動）
+      // 聲音狀態需連續 2 秒才算成立
 
       if (isSignalActive != lastSignalActive) {
-         // The activity state just changed (e.g. Quiet -> Noise, or Noise -> Quiet)
+         // 活動狀態剛剛改變（例：安靜 -> 有聲或反之）
          stateChangeTime = now;
          lastSignalActive = isSignalActive;
       }
 
-      // If the current activity state has persisted for > 2 seconds...
+      // 若活動狀態已持續超過 2 秒...
       if ((now - stateChangeTime) > SOUND_VALIDATION_TIME) {
-         // ...then update the Stable State
+         // 更新穩定狀態
          if (stableState != isSignalActive) {
             stableState = isSignalActive;
-            // Transition happened
+            // 狀態轉換成立
          }
       }
     }
@@ -215,139 +209,136 @@ class SoundManager {
 };
 
 // =================================================================================
-// Main Logic
+// 主邏輯
 // =================================================================================
 
 StepperDriver stepper(PIN_STEP_IN1, PIN_STEP_IN2, PIN_STEP_IN3, PIN_STEP_IN4);
 SoundManager soundMgr;
 
-// Application States
+// 應用狀態列舉
 enum AppMode {
   MODE_IR_DETECTED,
   MODE_NO_IR,
-  MODE_LOCKED_ANIMATION // Special state for the 2-turn fast spin
+  MODE_LOCKED_ANIMATION // 兩圈快速旋轉的特殊鎖定狀態
 };
 
 AppMode currentMode = MODE_NO_IR;
-bool lastSoundState = false; // To detect transitions
+bool lastSoundState = false; // 用於偵測聲音狀態轉換
 
-// For Random Mode
+// 隨機模式用的計時
 unsigned long randomModeTimer = 0;
 unsigned long nextRandomChange = 0;
 
 void setup() {
-  // Init Serial for debug
+  // 初始化序列埠供除錯使用
   Serial.begin(115200);
   Serial.println("System Starting...");
 
-  // Init Pins
+  // 初始化輸入腳位
   pinMode(PIN_PIR1, INPUT);
   pinMode(PIN_PIR2, INPUT);
 
-  // Init Servo
+  // 初始化伺服馬達
   servo1.attach(PIN_SERVO1);
   servo2.attach(PIN_SERVO2);
-  // Start Servo: Stable CCW medium-low
+  // 啟動伺服：穩定逆時針中低速
   servo1.write(SERVO_CCW_SPEED);
   servo2.write(SERVO_CCW_SPEED);
 
-  // Init Stepper
+  // 初始化步進馬達
   stepper.setup();
 
-  // Random seed
-  randomSeed(analogRead(A5)); // Use unconnected pin
+  // 隨機種子（使用未連接的腳位）
+  randomSeed(analogRead(A5)); // 未連接的腳位用來取亂數
 }
 
 void loop() {
   unsigned long now = millis();
 
-  // 1. Update Subsystems
+  // 1. 更新子系統
   stepper.update();
   soundMgr.update();
 
-  // 2. Check Inputs
+  // 2. 讀取輸入
   bool irDetected = (digitalRead(PIN_PIR1) == HIGH) || (digitalRead(PIN_PIR2) == HIGH);
   bool currentSoundState = soundMgr.getStableState();
 
-  // 3. State Machine
+  // 3. 狀態機
 
-  // High Priority: If Locked Animation is running, ignore everything else
+  // 高優先：鎖定動畫執行時，忽略其他事件
   if (stepper.isLocked()) {
     currentMode = MODE_LOCKED_ANIMATION;
-    // Keep checking until done
-    // Once done, the StepperDriver.isLocked() will return false
-    // We update lastSoundState to avoid immediate re-trigger if sound state changed during lock
-    // "Re-evaluate current sound status"
+    // 持續檢查直到鎖定結束，解除後 isLocked() 會回傳 false
+    // 同步最新聲音狀態，避免鎖定期間的變化立即觸發
     lastSoundState = currentSoundState;
-    return; // Skip other logic
+    return; // 跳過其他邏輯
   } else {
-    // If we just finished locking, or were in other modes
+    // 若剛解除鎖定或切換模式
     if (currentMode == MODE_LOCKED_ANIMATION) {
-       // Just finished. "After completion return to Normal speed".
-       // Logic below will handle speed setting based on IR/Sound state.
+       // 剛完成兩圈加速，接下來依紅外線／聲音狀態設定速度
        Serial.println("Locked sequence finished.");
     }
   }
 
-  // Determine Mode based on IR
+  // 依紅外線決定模式
   if (irDetected) {
     currentMode = MODE_IR_DETECTED;
   } else {
     currentMode = MODE_NO_IR;
   }
 
-  // Behavior based on Mode
+  // 依模式執行對應邏輯
   switch (currentMode) {
     case MODE_IR_DETECTED:
-      // State 1 Logic
+      // 狀態一邏輯
 
-      // Detect Sound Transition: Sound -> No Sound
+      // 偵測聲音轉換：有聲 -> 無聲
       if (lastSoundState == true && currentSoundState == false) {
-        // Trigger: Switch to Fast, 2 turns locked
+        // 觸發：切換快速鎖定並轉動 2 圈
         Serial.println("Trigger: Sound -> No Sound. Starting Locked Sequence.");
         stepper.startLockedSequence();
         lastSoundState = currentSoundState;
-        return; // Next loop will handle LOCKED_ANIMATION
+        return; // 下一輪由鎖定模式接管
       }
 
-      // Normal State 1 Behavior
+      // 狀態一一般行為
       if (currentSoundState) {
-        // Have Sound: Slow
+        // 有聲音：慢速
         stepper.setSpeedDelay(STEP_DELAY_SLOW);
         stepper.setMoving(true);
       } else {
-        // No Sound: Normal
+        // 無聲音：正常速度
         stepper.setSpeedDelay(STEP_DELAY_NORMAL);
         stepper.setMoving(true);
       }
       break;
 
     case MODE_NO_IR:
-      // State 2 Logic: Random
-      // "Every X seconds regenerate random command"
+      // 狀態二邏輯：隨機
+      // 每隔一段時間重新生成指令
 
       if (now > nextRandomChange) {
-        // Generate new random command
+        // 產生新的隨機指令
         int randCmd = random(0, 4); // 0, 1, 2, 3
-        int durationSec = random(2, 10); // Duration 2 to 10 seconds (Random)
+        int durationSec = random(2, 10); // 隨機維持 2~10 秒
 
         Serial.print("Random Mode: Cmd "); Serial.print(randCmd);
         Serial.print(" for "); Serial.print(durationSec); Serial.println("s");
 
         switch (randCmd) {
-          case 0: // Fast
+          case 0: // 加速
             stepper.setSpeedDelay(STEP_DELAY_FAST);
             stepper.setMoving(true);
             break;
-          case 1: // Slow
+          case 1: // 慢速
             stepper.setSpeedDelay(STEP_DELAY_SLOW);
             stepper.setMoving(true);
             break;
-          case 2: // Normal
+          case 2: // 正常
             stepper.setSpeedDelay(STEP_DELAY_NORMAL);
             stepper.setMoving(true);
             break;
-          case 3: // Stop
+          case 3: // 停止
             stepper.setMoving(false);
             break;
         }
@@ -357,10 +348,10 @@ void loop() {
       break;
 
     case MODE_LOCKED_ANIMATION:
-      // Should not be reached here due to top check, but safe fallback
+      // 理論上不會進入此處，僅為保護性處理
       break;
   }
 
-  // Update history
+  // 更新歷史狀態
   lastSoundState = currentSoundState;
 }
