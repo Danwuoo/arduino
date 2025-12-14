@@ -24,9 +24,9 @@ const int PIN_STEP_IN4 = 33;
 const int STEPS_PER_REV = 4096;
 
 // 每圈目標時間（毫秒）
-const unsigned long DURATION_FAST = 6000;
+const unsigned long DURATION_FAST = 4000;
 const unsigned long DURATION_NORMAL = 12000;
-const unsigned long DURATION_SLOW = 24000;
+const unsigned long DURATION_SLOW = 30000;
 
 // 依實測校正步進延遲：原本約 2ms/step 只達到約 8.3 秒／圈，
 // 需求為 6 秒／圈，因此調整為約 1.45ms/step (≈ 2ms × 0.7229)。
@@ -48,7 +48,9 @@ const int SERVO_CCW_SPEED = 100; // 例示值，接近 90 可維持中低速
 // --- 聲音設定 ---
 // 聲音類比讀值門檻（0-1023），需依現場調整。
 // 聲音狀態需連續 2 秒才算成立。
-const int SOUND_THRESHOLD = 300; // 聲音門檻，可依現場微調
+// 依環境噪音測試（伺服馬達持續轉動）結果：mean_abs 約 56~60、峰值 abs 約 145，
+// 建議門檻設在略高於峰值（例如 160），避免馬達噪音被判定為「有聲音」。
+const int SOUND_THRESHOLD = 100; // 聲音門檻，可依現場微調
 const unsigned long SOUND_ACTIVITY_WINDOW = 200; // 毫秒，短期保持 AC 訊號
 const unsigned long SOUND_VALIDATION_TIME = 2000; // 毫秒，連續 2 秒才視為狀態轉換
 
@@ -121,6 +123,18 @@ class StepperDriver {
 
     bool isLocked() {
       return remainingStepsLocked > 0;
+    }
+
+    unsigned long getStepIntervalMicros() const {
+      return stepIntervalMicros;
+    }
+
+    bool getIsMoving() const {
+      return isMoving;
+    }
+
+    int getRemainingStepsLocked() const {
+      return remainingStepsLocked;
     }
 
     void update() {
@@ -229,6 +243,55 @@ bool lastSoundState = false; // 用於偵測聲音狀態轉換
 unsigned long randomModeTimer = 0;
 unsigned long nextRandomChange = 0;
 
+// 每秒輸出一次狀態
+const unsigned long STATUS_PRINT_INTERVAL = 1000;
+unsigned long lastStatusPrint = 0;
+
+void printStatus(unsigned long now, bool irDetected, bool currentSoundState) {
+  if (now - lastStatusPrint < STATUS_PRINT_INTERVAL) return;
+  lastStatusPrint = now;
+
+  Serial.print(F("[STAT] t="));
+  Serial.print(now);
+  Serial.print(F("ms mode="));
+  switch (currentMode) {
+    case MODE_IR_DETECTED:
+      Serial.print(F("IR"));
+      break;
+    case MODE_NO_IR:
+      Serial.print(F("NO_IR"));
+      break;
+    case MODE_LOCKED_ANIMATION:
+      Serial.print(F("LOCKED"));
+      break;
+  }
+
+  Serial.print(F(" ir="));
+  Serial.print(irDetected ? 1 : 0);
+  Serial.print(F(" sound="));
+  Serial.print(currentSoundState ? 1 : 0);
+  Serial.print(F(" move="));
+  Serial.print(stepper.getIsMoving() ? 1 : 0);
+  Serial.print(F(" step_us="));
+  Serial.print(stepper.getStepIntervalMicros());
+  Serial.print(F(" locked="));
+  Serial.print(stepper.isLocked() ? 1 : 0);
+  Serial.print(F(" lock_rem="));
+  Serial.print(stepper.getRemainingStepsLocked());
+
+  if (currentMode == MODE_NO_IR) {
+    Serial.print(F(" nextRand="));
+    if (nextRandomChange > now) {
+      Serial.print(nextRandomChange - now);
+    } else {
+      Serial.print(0);
+    }
+    Serial.print(F("ms"));
+  }
+
+  Serial.println();
+}
+
 void setup() {
   // 初始化序列埠供除錯使用
   Serial.begin(115200);
@@ -271,6 +334,7 @@ void loop() {
     // 持續檢查直到鎖定結束，解除後 isLocked() 會回傳 false
     // 同步最新聲音狀態，避免鎖定期間的變化立即觸發
     lastSoundState = currentSoundState;
+    printStatus(now, irDetected, currentSoundState);
     return; // 跳過其他邏輯
   } else {
     // 若剛解除鎖定或切換模式
@@ -298,6 +362,7 @@ void loop() {
         Serial.println("Trigger: Sound -> No Sound. Starting Locked Sequence.");
         stepper.startLockedSequence();
         lastSoundState = currentSoundState;
+        printStatus(now, irDetected, currentSoundState);
         return; // 下一輪由鎖定模式接管
       }
 
@@ -351,6 +416,8 @@ void loop() {
       // 理論上不會進入此處，僅為保護性處理
       break;
   }
+
+  printStatus(now, irDetected, currentSoundState);
 
   // 更新歷史狀態
   lastSoundState = currentSoundState;
