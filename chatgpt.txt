@@ -1,0 +1,52 @@
+正式程式 output :
+22:22:26.212 -> [STAT] t=59000ms mode=NO_IR ir=0 sound=0 move=1 step_us=1450 locked=0 lock_rem=0 nextRand=7224ms
+22:22:27.197 -> [STAT] t=60000ms mode=NO_IR ir=0 sound=0 move=1 step_us=1450 locked=0 lock_rem=0 nextRand=6224ms
+22:22:28.167 -> [STAT] t=61000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:29.192 -> [STAT] t=62000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=4224ms
+22:22:30.166 -> [STAT] t=63000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:31.166 -> [STAT] t=64000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=2224ms
+22:22:32.174 -> [STAT] t=65000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=1224ms
+22:22:33.172 -> [STAT] t=66000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=224ms
+22:22:33.436 -> Random Mode: Cmd 2 for 2s
+22:22:34.166 -> [STAT] t=67000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:35.180 -> [STAT] t=68000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:35.933 -> Random Mode: Cmd 1 for 8s
+22:22:36.200 -> [STAT] t=69000ms mode=NO_IR ir=0 sound=0 move=1 step_us=5800 locked=0 lock_rem=0 nextRand=7745ms
+22:22:37.169 -> [STAT] t=70000ms mode=NO_IR ir=0 sound=0 move=1 step_us=5800 locked=0 lock_rem=0 nextRand=6745ms
+22:22:38.171 -> [STAT] t=71000ms mode=NO_IR ir=0 sound=0 move=1 step_us=5800 locked=0 lock_rem=0 nextRand=5745ms
+22:22:39.197 -> [STAT] t=72000ms mode=NO_IR ir=0 sound=0 move=1 step_us=5800 locked=0 lock_rem=0 nextRand=4745ms
+22:22:40.167 -> [STAT] t=73000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:41.193 -> [STAT] t=74000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:42.195 -> [STAT] t=75000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=1745ms
+22:22:43.213 -> [STAT] t=76000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=745ms
+22:22:43.943 -> Random Mode: Cmd 2 for 6s
+22:22:44.166 -> [STAT] t=77000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=5746ms
+22:22:45.205 -> [STAT] t=78000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=4746ms
+22:22:46.189 -> [STAT] t=79000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:47.203 -> [STAT] t=80000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:48.200 -> [STAT] t=81000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=1746ms
+22:22:49.172 -> [STAT] t=82000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=746ms
+22:22:49.947 -> Random Mode: Cmd 3 for 8s
+22:22:50.212 -> [STAT] t=83000ms mode=NO_IR ir=0 sound=0 move=0 step_us=2900 locked=0 lock_rem=0 nextRand=7747ms
+22:22:51.192 -> [STAT] t=84000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:52.201 -> [STAT] t=85000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:53.166 -> [STAT] t=86000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:54.166 -> [STAT] t=87000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=3747ms
+22:22:55.166 -> [STAT] t=88000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=2747ms
+22:22:56.197 -> [STAT] t=89000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=1747ms
+22:22:57.200 -> [STAT] t=90000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:58.210 -> [STAT] t=91000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:22:58.257 -> Random Mode: Cmd 2 for 8s
+22:22:59.192 -> [STAT] t=92000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:23:00.203 -> [STAT] t=93000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=6061ms
+22:23:01.170 -> [STAT] t=94000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=5061ms
+22:23:02.196 -> [STAT] t=95000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=4061ms
+22:23:03.212 -> [STAT] t=96000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:23:04.209 -> [STAT] t=97000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:23:05.209 -> [STAT] t=98000ms mode=IR ir=1 sound=0 move=1 step_us=2900 locked=0 lock_rem=0
+22:23:06.165 -> [STAT] t=99000ms mode=NO_IR ir=0 sound=0 move=1 step_us=2900 locked=0 lock_rem=0 nextRand=61ms
+22:23:06.258 -> Random Mode: Cmd 0 for 3s
+22:23:07.167 -> [STAT] t=100000ms mode=NO_IR ir=0 sound=0 move=1 step_us=1450 locked=0 lock_rem=0 nextRand=2062ms
+22:23:08.165 -> [STAT] t=101000ms mode=NO_IR ir=0 sound=0 move=1 step_us=1450 locked=0 lock_rem=0 nextRand=1062ms
+
+你幫我檢查一下是否正常
